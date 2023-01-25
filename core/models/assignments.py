@@ -5,6 +5,7 @@ from core.libs import helpers, assertions
 from core.models.teachers import Teacher
 from core.models.students import Student
 from sqlalchemy.types import Enum as BaseEnum
+from marshmallow_enum import EnumField
 
 
 class GradeEnum(str, enum.Enum):
@@ -64,6 +65,8 @@ class Assignment(db.Model):
         assignment = Assignment.get_by_id(_id)
         assertions.assert_found(assignment, 'No assignment with this id was found')
         assertions.assert_valid(assignment.student_id == principal.student_id, 'This assignment belongs to some other student')
+        assertions.assert_valid(assignment.state == AssignmentStateEnum.DRAFT,
+                                    'only a draft assignment can be submitted')
         assertions.assert_valid(assignment.content is not None, 'assignment with empty content cannot be submitted')
 
         assignment.teacher_id = teacher_id
@@ -77,12 +80,11 @@ class Assignment(db.Model):
         return cls.filter(cls.student_id == student_id).all()
 
     @classmethod
-    def grade(cls, _id, grade, principal: Principal):
+    def grading(cls, _id, grade, principal: Principal):
         assignment = Assignment.get_by_id(_id)
         assertions.assert_found(assignment, 'No assignment with this id was found')
-        assertions.assert_found(principal.teacher_id == _id, 'Teacher Mismatch')
-        assertions.assert_found(assignment.state == AssignmentStateEnum.SUBMITTED, 'Only a submitted assignment can be graded')
-        assertions.assert_valid(grade in GradeEnum, 'Invalid grade')
+        assertions.assert_valid(principal.teacher_id == assignment.teacher_id, 'Teacher Mismatch')
+        # assertions.assert_valid(assignment.state == AssignmentStateEnum.SUBMITTED, 'only a submitted assignment can be graded')
         
 
         assignment.grade = grade
