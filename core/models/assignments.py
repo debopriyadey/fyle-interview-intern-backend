@@ -75,3 +75,22 @@ class Assignment(db.Model):
     @classmethod
     def get_assignments_by_student(cls, student_id):
         return cls.filter(cls.student_id == student_id).all()
+
+    @classmethod
+    def grade(cls, _id, grade, principal: Principal):
+        assignment = Assignment.get_by_id(_id)
+        assertions.assert_found(assignment, 'No assignment with this id was found')
+        assertions.assert_found(principal.teacher_id == _id, 'Teacher Mismatch')
+        assertions.assert_found(assignment.state == AssignmentStateEnum.SUBMITTED, 'Only a submitted assignment can be graded')
+        assertions.assert_valid(grade in GradeEnum, 'Invalid grade')
+        
+
+        assignment.grade = grade
+        assignment.state = AssignmentStateEnum.GRADED
+        db.session.flush()
+
+        return assignment
+
+    @classmethod
+    def get_assignments_by_teacher(cls, teacher_id):
+        return cls.filter(cls.teacher_id == teacher_id and cls.state == 'SUBMITTED').all()
